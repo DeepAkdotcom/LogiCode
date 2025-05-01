@@ -3,6 +3,8 @@ import dotenv from "dotenv"
 import cors from "cors"
 import authRouter from "./routes/auth.routes.js"
 import healthcheckRouter from "./routes/healtcheck.routes.js"
+import problemRouter from "./routes/problem.route.js"
+import executeCodeRouter from "./routes/executeCode.route.js"
 
 const app = express()
 
@@ -15,6 +17,8 @@ app.use(express.urlencoded({ extended: true }))
 app.use("/api/v1/healthcheck", healthcheckRouter)
 
 app.use("/api/v1/auth", authRouter)
+app.use("/api/v1/problems", problemRouter)
+app.use("/api/v1/execute-code", executeCodeRouter)
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`)

@@ -33,4 +33,22 @@ export const isLoggedIn = async (req, res, next) => {
 
 }
 
-export {isLoggedIn}
+export const isAdmin = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const user = await db.User.findUnique({
+            where: {id: userId},
+            select : {role: true}
+        });
+
+        if(!user || user.role !== 'ADMIN'){
+            return res.status(403).json(new ApiResponse(403, "Forbidden - you do not have admin access"));
+        }
+        next();
+    } catch (error) {
+        console.log("Error in isAdmin middleware: ", error);
+        throw new ApiError(403, "Forbidden - you do not have admin access");
+    }
+}
+
+export {isLoggedIn, isAdmin}
