@@ -1,5 +1,5 @@
 import {db} from "../libs/db.js"
-import { pollBatchresults, submitBatch } from "../libs/judge0.lib.js";
+import { getJudge0LanguageId, pollBatchresults, submitBatch } from "../libs/judge0.lib.js";
 
 
 const createProblem = async (req, res) => {

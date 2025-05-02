@@ -1,65 +1,57 @@
-import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import crypto from "crypto";
-import {sendResetPasswordMail,sendVerificationMail} from "../utils/nodemailer.js";
+import {
+  sendResetPasswordMail,
+  sendVerificationMail,
+} from "../utils/nodemailer.js";
 import jwt from "jsonwebtoken";
-
-const prisma = new PrismaClient();
+import { db } from "../libs/db.js";
+import { ApiResponse } from "../utils/api-response.js";
 
 const registerUser = async (req, res) => {
-  const { name, email, password, phone } = req.body;
+  const { name, email, password} = req.body;
 
-  if (!name || !email || !password || !phone) {
-    res.status(400),
-      json({
-        success: false,
-        message: "Please fill all the fields",
-      });
+  if (!name || !email || !password) {
+    throw new ApiError(400, "Please fill all the fields.");
   }
 
-  try {
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+  const existingUser = await db.user.findUnique({
+    where: { email },
+  });
 
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: "user already exists",
-      });
-    }
-
-    //hashing
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const verificationToken = crypto.randomBytes(32).toString("hex");
-
-    //create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        phone,
-        verificationToken: verificationToken,
-      },
-    });
-    console.log(user);
-
-    //send mail
-    await sendVerificationMail(verificationToken);
-
-    res.status(201).json({
-      success: true,
-      message: "User registered succesfully",
-    });
-  } catch (err) {
-    return res.status(400).json({
-      success: false,
-      err,
-      message: "user not registered",
-    });
+  if (existingUser) {
+    throw new ApiError(409, "The user is already created.");
   }
+
+  //hashing
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const verificationToken = crypto.randomBytes(32).toString("hex");
+
+  //create user
+  const user = await db.user.create({
+    data: {
+      name,
+      email,
+      password: hashedPassword,
+      phone,
+      verificationToken: verificationToken,
+    },
+  });
+  console.log(user);
+
+  //send mail
+  await sendVerificationMail(verificationToken);
+
+  return res
+    .status(201)
+    .json(
+      new ApiResponse(
+        201,
+        newUser,
+        "User registered Successfully. Check your Email "
+      )
+    );
 };
 
 const verifyUser = async (req, res) => {
@@ -67,268 +59,212 @@ const verifyUser = async (req, res) => {
   console.log(token);
 
   if (!token) {
-    return res.status(400).json({
-      success: false,
-      message: "Invalid Token",
-    });
+    throw new ApiError(500, "Unable to verify User");
   }
-  try {
-    console.log("in try");
 
-    const user = await prisma.user.findFirst({
-      where: { verificationToken: token },
-    });
+  const user = await db.user.findFirst({
+    where: { verificationToken: token },
+  });
 
-    console.log("verify route: ", user);
+  // console.log("verify route: ", user);
 
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid token",
-      });
-    }
-
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        isVerified: true,
-        verificationToken: null,
-      },
-    });
-    console.log("after update", updatedUser);
-
-    res.status(200).json({
-      success: true,
-      message: "User verified succesfully!",
-    });
-  } catch (err) {
-    return res.status(400).json({
-      success: false,
-      err,
-      message: "User not verified!",
-    });
+  if (!user) {
+    throw new ApiError(500, "Unable to verify User");
   }
+
+  const updatedUser = await db.user.update({
+    where: { id: user.id },
+    data: {
+      isVerified: true,
+      verificationToken: null,
+    },
+  });
+  // console.log("after update", updatedUser);
+
+  res.status(200).json({
+    success: true,
+    message: "User verified succesfully!",
+  });
+
+  return res
+    .status(201)
+    .json(new ApiResponse(201, updatedUser, "User verified Succesfully"));
 };
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
-    return res.status(400).json({
-      success: false,
-      message: "Incorrect email or password",
-    });
+    throw new ApiError(400, "Incorrect email or password");
   }
 
-  try {
-    const user = await prisma.user.findFirst({
-      where: { email: email },
-    });
+  const user = await db.user.findUnique({
+    where: { email: email },
+  });
 
-    //check useer based on email
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-    //check password
-    const isMatched = await bcrypt.compare(password, user.password);
-    if (!isMatched) {
-      return res.status(400).json({
-        success: false,
-        message: "password incorrect",
-      });
-    }
-
-    console.log(user.isVerified);
-    if (!user.isVerified) {
-      return res.status(400).json({
-        success: false,
-        message: "user is not verified",
-      });
-    }
-
-    const jwtToken = jwt.sign(
-      { id: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "24h",
-      }
-    );
-    console.log(jwtToken);
-
-    //store in cookie
-    const cookieOptions = {
-      httpOnly: true,
-      secure: true,
-      maxAge: 24 * 60 * 60 * 1000,
-    };
-
-    res.cookie("jwtToken", jwtToken, cookieOptions);
-
-    res.status(200).json({
-      success: true,
-      message: "login success",
-      jwtToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        role: user.role,
-      },
-    });
-  } catch (err) {
-    return res.status(400).json({
-      success: false,
-      message: "login failed",
-    });
+  //check useer based on email
+  if (!user) {
+    throw new ApiError(404, "User not found, create user first");
   }
+
+  //check password
+  const isMatched = await bcrypt.compare(password, user.password);
+  if (!isMatched) {
+    throw new ApiError(400, "Incorrect password, not matched");
+  }
+
+  // console.log(user.isVerified);
+
+  if (!user.isVerified) {
+    throw new ApiError(400, "User is not verified");
+  }
+
+  const jwtToken = jwt.sign(
+    { id: user.id, role: user.role },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "24h",
+    }
+  );
+  console.log(jwtToken);
+
+  //store in cookie
+  const cookieOptions = {
+    httpOnly: true,
+    secure: true,
+    maxAge: 24 * 60 * 60 * 1000,
+  };
+
+  res.cookie("jwtToken", jwtToken, cookieOptions);
+
+  let data = {
+    jwtToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      image: user.image,
+    },
+  };
+
+  res.status(200).json(new ApiResponse(200, data, "Login Success"));
 };
 
 const profile = async (req, res) => {
-  try {
-    const id = req.user.id;
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        password: false,
-        email: true,
-        name: true,
-        phone: true,
-        isVerified: true,
-        role: true,
-      }
-    });
-        
-    if (!user) {
-      return res.status(400).json({
-        success: false,
-        message: "user not found",
-      });
-    }
+  const id = req.user.id;
+  const user = await db.user.findUnique({
+    where: { id },
+    select: {
+      password: false,
+      email: true,
+      name: true,
+      phone: true,
+      isVerified: true,
+      role: true,
+    },
+  });
 
-    return res.status(200).json({
-      success: true,
-      user,
-    });
-  } catch (err) {
-    return res.status(400).json({
-      success: false,
-      err,
-      message: "user is not authenticated",
-    });
+  if (!user) {
+    throw new ApiError(400, "user not found, create user first");
   }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, user, "Profile fetched successfully"));
 };
 
 const logoutUser = async (req, res) => {
-  try {
-    res.cookie("jwtToken", " ", {
-      expires: new Date(0),
-    });
-    return res.status(200).json({
-      success: true,
-      message: "Logged out",
-    });
-  } catch (error) {
-    return res.status(400).json({
-      success: false,
-      message: "Log out failed",
-    });
-  }
+  res.clearCookie("jwtToken", " ", {
+    expires: new Date(0),
+  });
+
+  res.status(201).json(new ApiResponse(201, null, "Logged out"));
 };
 
 const forgotPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
+  const { email } = req.body;
 
-    const user  = await prisma.user.findFirst({
-        where: {email}
-    })
-    console.log(user);
-    if(!user){
-        res.status(400).json({
-            success: false,
-            message: "User not found"
-        })
-    }
+  const user = await db.user.findFirst({
+    where: { email },
+  });
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
+  console.log(user);
 
-    const updatesuser = await prisma.user.update({
-        where: {id: user.id},
-        data: {
-            resetToken,
-            resetExpiry: new Date(Date.now() + 10 * 60 * 1000) //10min
-        }
-    })
-    console.log(updatesuser);
-
-    await sendResetPasswordMail(resetToken);
-
-    res.status(200).json({
-        success: true,
-        message: "Reset password link sent to your email"
-    })
-
-  } catch (err) {
-    res.status(400).json({
-        success: false,
-        message: "Failed to send reset password link"
-    })
+  if (!user) {
+    throw new ApiError(400, "User not found, create user first");
   }
+
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  const updatesuser = await db.user.update({
+    where: { id: user.id },
+    data: {
+      resetToken,
+      resetExpiry: new Date(Date.now() + 10 * 60 * 1000), //10min
+    },
+  });
+
+  console.log(updatesuser);
+
+  await sendResetPasswordMail(resetToken);
+
+  res
+    .status(201)
+    .json(new ApiResponse(201, null, "Reset password link sent to your email"));
 };
 
 const resetpassword = async (req, res) => {
-    try {
-        const {password, confirmPassword} = req.body;
-        const {token} = req.params;
-        
-        if(!password || !confirmPassword){
-            return res.status(400).json({
-                success: false,
-                message: "Password and confirm password are required"
-            })
-        }
+  const { password, confirmPassword } = req.body;
+  const { token } = req.params;
 
-        if(password !== confirmPassword){
-            res.status(400).json({
-                success: false,
-                message: "Password and confirm password do not match"
-            })
-        }
-        console.log("brfore user check")
-        console.log(token);
-        const user = await prisma.user.findFirst({
-            where: {
-                resetToken : token,
-                resetExpiry: {gt: new Date()}
-            }
-        })
+  if (!password || !confirmPassword) {
+    throw new ApiError(400, "Password and confirm password are required");
+  }
 
-        console.log(user); 
-        const hashedPasswd = await bcrypt.hash(password, 10);
+  if (password !== confirmPassword) {
+    throw new ApiError(400, "Password and confirm password do not match");
+  }
 
-        const updatedUser = await prisma.user.update({
-            where: {id: user.id},
-            data: {
-                password: hashedPasswd,
-                resetToken: null,
-                resetExpiry: null
-            }
-        })
+  console.log("brfore user check");
+  console.log(token);
 
-        console.log(updatedUser);
+  const user = await db.user.findFirst({
+    where: {
+      resetToken: token,
+      resetExpiry: { gt: new Date() },
+    },
+  });
 
-        res.status(200).json({
-            success: true,
-            message: "Password reset successful"
-        })
-    } catch (err) {
-        res.status(400).json({
-            success: false,
-            message: "Failed to reset password"
-        })
-    }
+  console.log(user);
+
+  const hashedPasswd = await bcrypt.hash(password, 10);
+
+  const updatedUser = await db.user.update({
+    where: { id: user.id },
+    data: {
+      password: hashedPasswd,
+      resetToken: null,
+      resetExpiry: null,
+    },
+  });
+
+  console.log(updatedUser);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successful",
+  });
+
+  res.status(201).json(new ApiResponse(201, null, "Password reset successful"));
 };
 
-export { registerUser, verifyUser, loginUser, profile, logoutUser, forgotPassword, resetpassword };
+export {
+  registerUser,
+  verifyUser,
+  loginUser,
+  profile,
+  logoutUser,
+  forgotPassword,
+  resetpassword,
+};
