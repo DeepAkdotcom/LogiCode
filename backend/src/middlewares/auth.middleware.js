@@ -1,5 +1,6 @@
 import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
+import jwt from "jsonwebtoken";
 export const isLoggedIn = async (req, res, next) => {
 
     console.log(req.cookies);
@@ -26,6 +27,7 @@ export const isLoggedIn = async (req, res, next) => {
      req.user = decode;
      next();
    } catch (error) {
+        console.log(error);
         throw new ApiError(401, "Error in jwt verification");
    }
 

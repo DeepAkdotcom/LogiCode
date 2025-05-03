@@ -7,9 +7,10 @@ import {
 import jwt from "jsonwebtoken";
 import { db } from "../libs/db.js";
 import { ApiResponse } from "../utils/api-response.js";
+import { ApiError } from "../utils/api-error.js";
 
 const registerUser = async (req, res) => {
-  const { name, email, password} = req.body;
+  const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
     throw new ApiError(400, "Please fill all the fields.");
@@ -47,7 +48,7 @@ const registerUser = async (req, res) => {
     .json(
       new ApiResponse(
         201,
-        newUser,
+        user,
         "User registered Successfully. Check your Email "
       )
     );
@@ -80,12 +81,7 @@ const verifyUser = async (req, res) => {
   });
   // console.log("after update", updatedUser);
 
-  res.status(200).json({
-    success: true,
-    message: "User verified succesfully!",
-  });
-
-  return res
+  res
     .status(201)
     .json(new ApiResponse(201, updatedUser, "User verified Succesfully"));
 };
@@ -234,6 +230,10 @@ const resetpassword = async (req, res) => {
     },
   });
 
+  if (!user) {
+    throw new ApiError(400, "Invalid or expired reset token");
+  }
+
   console.log(user);
 
   const hashedPasswd = await bcrypt.hash(password, 10);
@@ -248,11 +248,6 @@ const resetpassword = async (req, res) => {
   });
 
   console.log(updatedUser);
-
-  res.status(200).json({
-    success: true,
-    message: "Password reset successful",
-  });
 
   res.status(201).json(new ApiResponse(201, null, "Password reset successful"));
 };

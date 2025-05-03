@@ -5,6 +5,7 @@ import authRouter from "./routes/auth.routes.js"
 import healthcheckRouter from "./routes/healtcheck.routes.js"
 import problemRouter from "./routes/problem.route.js"
 import executeCodeRouter from "./routes/executeCode.route.js"
+import cookieParser from "cookie-parser"
 
 const app = express()
 
@@ -13,6 +14,8 @@ app.use(cors())
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
+app.use(cookieParser())
 
 app.use("/api/v1/healthcheck", healthcheckRouter)
 
