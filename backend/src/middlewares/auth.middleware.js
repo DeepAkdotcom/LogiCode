@@ -1,7 +1,5 @@
-import { ApiError } from "../utils/api-error";
-import { ApiResponse } from "../utils/api-response";
-import { AsyncHandler } from "../utils/async-handler"
-
+import { ApiError } from "../utils/api-error.js";
+import { ApiResponse } from "../utils/api-response.js";
 export const isLoggedIn = async (req, res, next) => {
 
     console.log(req.cookies);
@@ -50,5 +48,3 @@ export const isAdmin = async (req, res, next) => {
         throw new ApiError(403, "Forbidden - you do not have admin access");
     }
 }
-
-export {isLoggedIn, isAdmin}

@@ -34,7 +34,6 @@ const registerUser = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      phone,
       verificationToken: verificationToken,
     },
   });
@@ -159,7 +158,6 @@ const profile = async (req, res) => {
       password: false,
       email: true,
       name: true,
-      phone: true,
       isVerified: true,
       role: true,
     },
