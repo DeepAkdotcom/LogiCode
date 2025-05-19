@@ -6,8 +6,8 @@ import { createProblem, deleteProblem, getAllProblems, getAllProblemsSolvedByUse
 const problemRouter = express.Router();
 
 problemRouter.route("/create-problem").post(AsyncHandler(isLoggedIn),AsyncHandler(isAdmin), AsyncHandler(createProblem))
-problemRouter.route("/get-all-problems").post(AsyncHandler(isLoggedIn),AsyncHandler(getAllProblems))
-problemRouter.route("/get-problem/:id").post(AsyncHandler(isLoggedIn),AsyncHandler(getproblemById))
+problemRouter.route("/get-all-problems").get(AsyncHandler(isLoggedIn),AsyncHandler(getAllProblems))
+problemRouter.route("/get-problem/:id").get(AsyncHandler(isLoggedIn),AsyncHandler(getproblemById))
 
 problemRouter.route("/update-problem/:id").put(AsyncHandler(isLoggedIn), AsyncHandler(isAdmin),AsyncHandler(updateProblem))
 

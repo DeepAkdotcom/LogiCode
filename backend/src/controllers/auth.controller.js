@@ -81,7 +81,7 @@ const verifyUser = async (req, res) => {
   });
   // console.log("after update", updatedUser);
 
-  res
+  return res
     .status(201)
     .json(new ApiResponse(201, updatedUser, "User verified Succesfully"));
 };
@@ -143,7 +143,7 @@ const loginUser = async (req, res) => {
     },
   };
 
-  res.status(200).json(new ApiResponse(200, data, "Login Success"));
+  return res.status(200).json(new ApiResponse(200, data, "Login Success"));
 };
 
 const profile = async (req, res) => {
@@ -163,7 +163,7 @@ const profile = async (req, res) => {
     throw new ApiError(400, "user not found, create user first");
   }
 
-  res
+  return res
     .status(200)
     .json(new ApiResponse(200, user, "Profile fetched successfully"));
 };
@@ -173,7 +173,7 @@ const logoutUser = async (req, res) => {
     expires: new Date(0),
   });
 
-  res.status(201).json(new ApiResponse(201, null, "Logged out"));
+  return res.status(201).json(new ApiResponse(201, null, "Logged out"));
 };
 
 const forgotPassword = async (req, res) => {
@@ -203,7 +203,7 @@ const forgotPassword = async (req, res) => {
 
   await sendResetPasswordMail(resetToken);
 
-  res
+  return res
     .status(201)
     .json(new ApiResponse(201, null, "Reset password link sent to your email"));
 };
@@ -249,7 +249,9 @@ const resetpassword = async (req, res) => {
 
   console.log(updatedUser);
 
-  res.status(201).json(new ApiResponse(201, null, "Password reset successful"));
+  return res
+    .status(201)
+    .json(new ApiResponse(201, null, "Password reset successful"));
 };
 
 export {

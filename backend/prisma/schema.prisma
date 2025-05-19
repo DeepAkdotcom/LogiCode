@@ -48,7 +48,7 @@ model Problem {
   id                 String     @id @default(uuid())
   title              String
   description        String
-  diffculty          Difficulty
+  difficulty          Difficulty
   tags               String[]
   userId             String
   examples           Json

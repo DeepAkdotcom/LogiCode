@@ -1,192 +1,158 @@
-import {db} from "../libs/db.js"
-import { getJudge0LanguageId, pollBatchresults, submitBatch } from "../libs/judge0.lib.js";
-
+import { db } from "../libs/db.js";
+import {
+  getJudge0LanguageId,
+  pollBatchresults,
+  submitBatch,
+} from "../libs/judge0.lib.js";
+import { ApiError } from "../utils/api-error.js";
+import { ApiResponse } from "../utils/api-response.js";
 
 const createProblem = async (req, res) => {
-    //get the data from the request body
-    // check the user role once again
-    // loop through each reference solution for different languages
-        //get judge0 lang id for curr lang
-        // prepare judge0 submission for all tc's
-        // submit all tc's in one batch
-        // extract tokens from response
-        // poll judg0 until all submissions are done
-        // validate that each tc is passed, (ststus.is === 3)
-    // save the problem in the db after all validations are passed
+  //get the data from the request body
+  // check the user role once again
+  // loop through each reference solution for different languages
+  //get judge0 lang id for curr lang
+  // prepare judge0 submission for all tc's
+  // submit all tc's in one batch
+  // extract tokens from response
+  // poll judg0 until all submissions are done
+  // validate that each tc is passed, (ststus.is === 3)
+  // save the problem in the db after all validations are passed
 
-    const {title, description, diffculty, tags, examples, constraints, testCases, codeSnippets, referenceSolutions} = req.body
+  const {
+    title,
+    description,
+    difficulty,
+    tags,
+    examples,
+    constraints,
+    testCases,
+    codeSnippets,
+    referenceSolutions,
+  } = req.body;
 
-    if(req.user.role !== 'ADMIN'){
-        return res.status(403).json({
-            success: false,
-            message: "You are not authorized to create problems"
-        });
+  console.log(req.user.role);
+
+  if (req.user.role !== "ADMIN") {
+    throw new ApiError(403, "You are not authorized to create problems");
+  }
+
+  for (const [language, solutionCode] of Object.entries(referenceSolutions)) {
+    const languageId = getJudge0LanguageId(language);
+
+    if (!languageId) {
+      throw new ApiError(400, `Language ${language} is not supported`);
     }
 
-    try {
-        for(const [language, solutionCode] of Object.entries(referenceSolutions)){
-            const languageId = getJudge0LanguageId(language);   
+    const submissions = testCases.map(({ input, output }) => ({
+      source_code: solutionCode,
+      language_id: languageId,
+      stdin: input,
+      expected_output: output,
+    }));
 
-            if(!languageId){
-                return res.status(400).json({
-                    success: false,
-                    message: `Language ${language} is not supported`
-                });
-            }
+    console.log(submissions);
 
-            const submissions = testCases.map(({input, output}) => ({
-                source_code : solutionCode,
-                language_id : languageId,
-                stdin : input,
-                expected_output : output
-            }));
+    const submissionResults = await submitBatch(submissions);
 
-            const submissionResults = await submitBatch(submissions);
+    const tokens = submissionResults.map((res) => res.token);
 
-            const tokens = submissionResults.map((res) => res.token);
+    console.log(tokens);
 
-            const results = await pollBatchresults(tokens);
+    const results = await pollBatchresults(tokens);
 
-            for(let i=0; i<results.length; i++){
-                const result = results[i];
+    for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        console.log("result------------>", result);
+        // console.log(`testcase ${i + 1} and language ${language}-------result ${JSON.stringify.(result.status.description)}`);
 
-                if(result.status.id !== 3){
-                    return res.status(400).json({
-                        success: false,
-                        message: `Test case ${i+1} failed for language ${language}`
-                    });
-                }
-            }
-
-            const newProblem = await db.problem.create({
-                data: {
-                    title,
-                    description,
-                    diffculty,
-                    tags,
-                    examples,
-                    constraints,
-                    testCases,
-                    codeSnippets,
-                    referenceSolutions, 
-                    userId : req.user.id
-                }
-            })
-
-            return res.status(201).json({
-                success: true,
-                message: "Problem created successfully",
-                problem: newProblem
-            });
-        }
-    } catch (error) {
-        return res.status(400).json({
-            success: false,
-            message: "Problem creation failed",
-        })
+      if (result.status.id !== 3) {
+        throw new ApiError(
+          400,
+          `Invalid test case ${i + 1} for language ${language}`
+        );
+      }
     }
-}
+
+    const newProblem = await db.problem.create({
+      data: {
+        title,
+        description,
+        difficulty,
+        tags,
+        examples,
+        constraints,
+        testCases,
+        codeSnippets,
+        referenceSolutions,
+        userId: req.user.id
+      }
+    });
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, newProblem, "Problem created successfully"));
+  }
+};
+
 const getAllProblems = async (req, res) => {
-    try {
-        const problems = await db.problem.findMany();
+  const problems = await db.problem.findMany();
 
-        if(!problems){
-            return res.status(404).json({
-                success: false,
-                message: "No problems found"
-            });
-        }
+  if (!problems) {
+    throw new ApiError(404, "No problems found");
+  }
 
-        res.status(200).json({
-            success: true,
-            message: "Problems fetched successfully",
-            problems
-        })
-    } catch (error) {
-         return res.status(500).json({
-            success: false,
-            message: "Error while fetching problems"
-         })
-    }
-}
- 
+  return res
+    .status(200)
+    .json(new ApiResponse(200, problems, "Problems fetched successfully"));
+};
+
 const getproblemById = async (req, res) => {
-    const {id} = req.params;
+  const { id } = req.params;
 
-    try {
-        const problem = await db.problem.findUnique({
-            where: {id}
-        })
+  const problem = await db.problem.findUnique({
+    where: { id },
+  });
 
-        if(!problem){
-            return res.status(404).json({
-                success: false,
-                message: "Problem not found"
-            });
-        }
+  if (!problem) {
+    throw new ApiError(404, "Problem not found");
+  }
 
-        res.status(200).json({
-            success: true,
-            message: "Problem fetched successfully",
-            problem
-        })
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Error while fetching the problem by Id"
-        })
-    }
-}
+  return res
+    .status(200)
+    .json(new ApiResponse(200, problem, "Problem fetched successfully"));
+};
 
-
-const updateProblem = async (req, res) => {
-
-}
+const updateProblem = async (req, res) => {};
 
 const deleteProblem = async (req, res) => {
-    const {id} = req.params;
-    
-   try {
-     const problem = await db.problem.findUnique({
-         where: {id}
-     })
-     
-     if(!problem){
-         return res.status(404).json({
-             success: false,
-             message: "Problem not found"
-         });
-     }
- 
-     await db.problem.delete({
-         where: {id}
-     })
+  const { id } = req.params;
+    // Find the problem by id
+    const problem = await db.problem.findUnique({
+      where: { id },
+    });
 
-     res.status(200).json({
-         success: true,
-         message: "Problem deleted successfully"
-     })
+    if (!problem) {
+      // If problem not found, return 404 status with error message
+      throw new ApiError(404, "Problem not found");
+    }
 
-   } catch (error) {
-       return res.status(500).json({
-           success: false,
-           message: "Error while deleting the problem"
-       })
-   }
-}
+    // Delete the problem
+    await db.problem.delete({
+      where: { id },
+    });
 
-const getAllProblemsSolvedByUser = async (req, res) => {
-    
-}
+    // Return 200 status with success message
+    return res.status(200).json(new ApiResponse(200, null, "Problem deleted successfully"));
+};
 
-
+const getAllProblemsSolvedByUser = async (req, res) => {};
 
 export {
-    createProblem,
-    getAllProblems,
-    getproblemById,
-    updateProblem,
-    deleteProblem,
-    getAllProblemsSolvedByUser
-}
-
+  createProblem,
+  getAllProblems,
+  getproblemById,
+  updateProblem,
+  deleteProblem,
+  getAllProblemsSolvedByUser,
+};

@@ -1,3 +1,4 @@
+import axios from "axios";
 export const getJudge0LanguageId  = (language) => {
     const languageMap = {
         "JAVA": "62",
@@ -10,6 +11,7 @@ export const getJudge0LanguageId  = (language) => {
 }
 
 export const submitBatch = async (submissions) => {
+    console.log(`${process.env.JUDGE0_URL}/submissions/batch?base64_encoded=false`);
     const {data} = await axios.post(`${process.env.JUDGE0_URL}/submissions/batch?base64_encoded=false`, {submissions});
 
     console.log("submissions: ", data);
@@ -22,17 +24,19 @@ export const pollBatchresults = async (tokens) => {
     while(true){
         const {data} = await axios.get(`${process.env.JUDGE0_URL}/submissions/batch`, {
             params: {
-                tokens: tokens.join(','),
+                tokens: tokens.join(","),
                 base64_encoded: false
             }
         });
- 
+        console.log(data);
+
         const results = data.submissions
 
         const isAllDone = results.every(
             (r) => r.status.id !== 1 && r.status.id !== 2 
         )
-
+        
+        console.log("isAllDone: ", isAllDone);
         if(isAllDone){
             return results;
         }
