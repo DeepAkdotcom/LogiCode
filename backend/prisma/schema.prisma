@@ -75,7 +75,7 @@ model Submission {
   language       String
   stdin          String?
   stdout         String?
-  stdeerr        String?
+  stderr        String?
   compiledOutput String?
   status         String
   memory         String?

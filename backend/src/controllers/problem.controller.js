@@ -51,9 +51,11 @@ const createProblem = async (req, res) => {
       expected_output: output,
     }));
 
-    console.log(submissions);
+    console.log("deepak--->",submissions);
 
     const submissionResults = await submitBatch(submissions);
+
+    console.log(`after submitbatch---->${submissionResults}`);
 
     const tokens = submissionResults.map((res) => res.token);
 
@@ -63,7 +65,7 @@ const createProblem = async (req, res) => {
 
     for (let i = 0; i < results.length; i++) {
         const result = results[i];
-        console.log("result------------>", result);
+        // console.log("result------------>", result);
         // console.log(`testcase ${i + 1} and language ${language}-------result ${JSON.stringify.(result.status.description)}`);
 
       if (result.status.id !== 3) {
