@@ -1,5 +1,5 @@
-import { db } from "../libs/db";
-import { ApiResponse } from "../utils/api-response";
+import { db } from "../libs/db.js";
+import { ApiResponse } from "../utils/api-response.js";
 
 export const getAllSubmissions = async (req, res) => {
     const userId = req.user.id;
