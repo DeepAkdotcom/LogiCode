@@ -148,7 +148,24 @@ const deleteProblem = async (req, res) => {
     return res.status(200).json(new ApiResponse(200, null, "Problem deleted successfully"));
 };
 
-const getAllProblemsSolvedByUser = async (req, res) => {};
+const getAllProblemsSolvedByUser = async (req, res) => {
+  const problems = await db.problem.findMany({
+    where: {
+      solvedBy:{
+        some:{
+          userId: req.user.id
+        }
+      }
+    },
+    include: {
+      solvedBy: {
+        userId: req.user.id
+      }
+    }
+  })
+
+  return res.status(200).json(new ApiResponse(200, problems, `problems for ${req.user.id} fetched successfully`)) 
+};
 
 export {
   createProblem,

@@ -24,6 +24,7 @@ app.use("/api/v1/auth", authRouter)
 app.use("/api/v1/problems", problemRouter)
 app.use("/api/v1/execute-code", executeCodeRouter)
 app.use("/api/v1/submissions", submissionRouter)
+app.use("/api/v1/playlist", playlistRouter)
 
 app.listen(process.env.PORT, () => {
     console.log(`Server is running on port ${process.env.PORT}`)

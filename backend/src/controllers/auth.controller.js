@@ -254,6 +254,10 @@ const resetpassword = async (req, res) => {
     .json(new ApiResponse(201, null, "Password reset successful"));
 };
 
+const check = async(req,res) => {
+  return res.status(200).json(new ApiResponse(200, req.user, "User authenticated successfully"))
+}
+
 export {
   registerUser,
   verifyUser,
@@ -262,4 +266,5 @@ export {
   logoutUser,
   forgotPassword,
   resetpassword,
+  check
 };

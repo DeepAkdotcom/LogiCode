@@ -1,5 +1,5 @@
 import express from "express";
-import { forgotPassword, loginUser, logoutUser, profile, registerUser, resetpassword, verifyUser} from "../controllers/auth.controller.js";
+import { check, forgotPassword, loginUser, logoutUser, profile, registerUser, resetpassword, verifyUser} from "../controllers/auth.controller.js";
 import { AsyncHandler } from "../utils/async-handler.js";
 import { isLoggedIn } from "../middlewares/auth.middleware.js";
 
@@ -12,5 +12,6 @@ authRouter.route("/me").get(AsyncHandler(isLoggedIn), AsyncHandler(profile))
 authRouter.route("/logout").get(AsyncHandler(isLoggedIn), AsyncHandler(logoutUser))
 authRouter.route("/forgot").post(AsyncHandler(forgotPassword));
 authRouter.route("/resetpassword/:token").get(AsyncHandler(resetpassword));
+authRouter.route("/check").get(AsyncHandler(isLoggedIn), AsyncHandler(check));
 
 export default authRouter
