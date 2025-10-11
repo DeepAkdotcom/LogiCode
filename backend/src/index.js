@@ -7,6 +7,7 @@ import problemRouter from "./routes/problem.route.js"
 import executeCodeRouter from "./routes/executeCode.route.js"
 import cookieParser from "cookie-parser"
 import submissionRouter from "./routes/submission.route.js"
+import playlistRouter from "./routes/playlist.routes.js"
 
 const app = express()
 
