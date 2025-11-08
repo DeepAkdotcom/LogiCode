@@ -2,6 +2,7 @@ import { db } from "../libs/db.js";
 import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
 import jwt from "jsonwebtoken";
+
 export const isLoggedIn = async (req, res, next) => {
   console.log(req.cookies);
 
@@ -22,14 +23,33 @@ export const isLoggedIn = async (req, res, next) => {
     return res.status(401).json(new ApiResponse(401, "Unauthorized"));
   }
 
+  let decode;
+
   try {
-    const decode = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decode;
-    next();
+    decode = jwt.verify(token, process.env.JWT_SECRET);
   } catch (error) {
     console.log(error);
     throw new ApiError(401, "Error in jwt verification");
   }
+  const user = await db.user.findUnique({
+    where: {
+      id: decode.id
+    },
+    select: {
+      id: true,
+      image: true,
+      name: true,
+      email: true,
+      role: true
+    }
+  });
+
+  if (!user) {
+    return res.status(404).json(new ApiError(404,"User not found"));
+  }
+
+  req.user = user;
+  next();
 };
 
 export const isAdmin = async (req, res, next) => {
