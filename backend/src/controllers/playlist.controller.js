@@ -73,18 +73,19 @@ const addproblemToPlaylist = async (req, res) => {
         throw new ApiError(400, "Invalid or missing problem Ids");
     }
 
-    console.log(
+    console.log("in playlist controller", problemIds)
+
+    console.log("in playlist controller---2",
         problemIds.map((problemId)=>{
-            playlistId,
-            problemId
+            return {playlistId, problemId}
         })
     )
 
     const problemsInPlaylist = await db.problemInPlaylist.createMany({
-        data:problemIds.map((problemId)=>{
+        data:problemIds.map((problemId)=>({
             playlistId,
             problemId   
-        })
+        }))
     })
 
     return res.status(201).json(new ApiResponse(200, problemsInPlaylist, "Problems added to playlist successfully"));    
