@@ -38,7 +38,8 @@ const getAllListDetails = async(req, res) => {
 }
 
 const getPlayListDetails = async(req, res) => {
-    const playlistId = req.params
+    const playlistId = req.params.playlistId
+    console.log(req.params);
     const playlist = await db.playlist.findUnique({
         where: {
             id: playlistId,

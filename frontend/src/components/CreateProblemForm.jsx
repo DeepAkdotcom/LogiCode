@@ -16,7 +16,8 @@ import Editor from "@monaco-editor/react";
 import { useState } from 'react';
 import {axiosInstance} from "../lib/axios"
 import toast from "react-hot-toast";
-import {useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { SUPPORTED_LANGUAGES } from "../lib/lang";
 
 const problemSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters"),
@@ -34,33 +35,16 @@ const problemSchema = z.object({
       })
     )
     .min(1, "At least one test case is required"),
-  examples: z.object({
-    JAVASCRIPT: z.object({
+  examples: z.record(
+    z.string(),
+    z.object({
       input: z.string().min(1, "Input is required"),
       output: z.string().min(1, "Output is required"),
       explanation: z.string().optional(),
-    }),
-    PYTHON: z.object({
-      input: z.string().min(1, "Input is required"),
-      output: z.string().min(1, "Output is required"),
-      explanation: z.string().optional(),
-    }),
-    JAVA: z.object({
-      input: z.string().min(1, "Input is required"),
-      output: z.string().min(1, "Output is required"),
-      explanation: z.string().optional(),
-    }),
-  }),
-  codeSnippets: z.object({
-    JAVASCRIPT: z.string().min(1, "JavaScript code snippet is required"),
-    PYTHON: z.string().min(1, "Python code snippet is required"),
-    JAVA: z.string().min(1, "Java solution is required"),
-  }),
-  referenceSolutions: z.object({
-    JAVASCRIPT: z.string().min(1, "JavaScript solution is required"),
-    PYTHON: z.string().min(1, "Python solution is required"),
-    JAVA: z.string().min(1, "Java solution is required"),
-  }),
+    })
+  ),
+  codeSnippets: z.record(z.string(), z.string().min(1, "Code snippet is required")),
+  referenceSolutions: z.record(z.string(), z.string().min(1, "Solution is required")),
 });
 
 
@@ -91,222 +75,52 @@ const sampledpData = {
     },
   ],
   examples: {
-    JAVASCRIPT: {
-      input: "n = 2",
-      output: "2",
-      explanation:
-        "There are two ways to climb to the top:\n1. 1 step + 1 step\n2. 2 steps",
-    },
-    PYTHON: {
-      input: "n = 3",
-      output: "3",
-      explanation:
-        "There are three ways to climb to the top:\n1. 1 step + 1 step + 1 step\n2. 1 step + 2 steps\n3. 2 steps + 1 step",
-    },
-    JAVA: {
-      input: "n = 4",
-      output: "5",
-      explanation:
-        "There are five ways to climb to the top:\n1. 1 step + 1 step + 1 step + 1 step\n2. 1 step + 1 step + 2 steps\n3. 1 step + 2 steps + 1 step\n4. 2 steps + 1 step + 1 step\n5. 2 steps + 2 steps",
-    },
+    JAVASCRIPT: { input: "n = 2", output: "2", explanation: "1+1 or 2" },
+    PYTHON: { input: "n = 3", output: "3", explanation: "1+1+1, 1+2, 2+1" },
+    JAVA: { input: "n = 4", output: "5", explanation: "..." },
+    CPP: { input: "n = 5", output: "8", explanation: "..." },
+    TYPESCRIPT: { input: "n = 2", output: "2", explanation: "..." },
+    C: { input: "n = 3", output: "3", explanation: "..." },
+    GO: { input: "n = 4", output: "5", explanation: "..." },
+    RUST: { input: "n = 5", output: "8", explanation: "..." },
+    RUBY: { input: "n = 2", output: "2", explanation: "..." },
+    PHP: { input: "n = 3", output: "3", explanation: "..." },
+    SWIFT: { input: "n = 4", output: "5", explanation: "..." },
+    CSHARP: { input: "n = 5", output: "8", explanation: "..." },
+    KOTLIN: { input: "n = 2", output: "2", explanation: "..." },
+    SCALA: { input: "n = 3", output: "3", explanation: "..." },
   },
   codeSnippets: {
-    JAVASCRIPT: `/**
-* @param {number} n
-* @return {number}
-*/
-function climbStairs(n) {
-// Write your code here
-}
-
-// Parse input and execute
-const readline = require('readline');
-const rl = readline.createInterface({
-input: process.stdin,
-output: process.stdout,
-terminal: false
-});
-
-rl.on('line', (line) => {
-const n = parseInt(line.trim());
-const result = climbStairs(n);
-
-console.log(result);
-rl.close();
-});`,
-    PYTHON: `class Solution:
-  def climbStairs(self, n: int) -> int:
-      # Write your code here
-      pass
-
-# Input parsing
-if __name__ == "__main__":
-  import sys
-  
-  # Parse input
-  n = int(sys.stdin.readline().strip())
-  
-  # Solve
-  sol = Solution()
-  result = sol.climbStairs(n)
-  
-  # Print result
-  print(result)`,
-    JAVA: `import java.util.Scanner;
-
-class Main {
-  public int climbStairs(int n) {
-      // Write your code here
-      return 0;
-  }
-  
-  public static void main(String[] args) {
-      Scanner scanner = new Scanner(System.in);
-      int n = Integer.parseInt(scanner.nextLine().trim());
-      
-      // Use Main class instead of Solution
-      Main main = new Main();
-      int result = main.climbStairs(n);
-      
-      System.out.println(result);
-      scanner.close();
-  }
-}`,
+    JAVASCRIPT: `function climbStairs(n) {\n  // Write your code here\n}\n\nconst readline = require('readline');\nconst rl = readline.createInterface({ input: process.stdin, terminal: false });\nrl.on('line', (line) => {\n  console.log(climbStairs(parseInt(line.trim())));\n  rl.close();\n});`,
+    PYTHON: `import sys\ndef climbStairs(n):\n    # Write your code here\n    pass\n\nif __name__ == "__main__":\n    n = int(sys.stdin.readline().strip())\n    print(climbStairs(n))`,
+    JAVA: `import java.util.Scanner;\nclass Main {\n    public int climbStairs(int n) {\n        return 0;\n    }\n    public static void main(String[] args) {\n        Scanner s = new Scanner(System.in);\n        int n = s.nextInt();\n        System.out.println(new Main().climbStairs(n));\n    }\n}`,
+    CPP: `#include <iostream>\nusing namespace std;\nclass Solution {\npublic:\n    int climbStairs(int n) {\n        return 0;\n    }\n};\nint main() {\n    int n; cin >> n;\n    cout << Solution().climbStairs(n) << endl;\n    return 0;\n}`,
+    TYPESCRIPT: `function climbStairs(n: number): number {\n  return 0;\n}\nimport * as fs from "fs";\nconst input = fs.readFileSync(0, "utf8");\nconsole.log(climbStairs(parseInt(input.trim())));`,
+    C: `#include <stdio.h>\nint climbStairs(int n) {\n    return 0;\n}\nint main() {\n    int n; scanf("%d", &n);\n    printf("%d\\n", climbStairs(n));\n    return 0;\n}`,
+    GO: `package main\nimport "fmt"\nfunc climbStairs(n int) int {\n    return 0\n}\nfunc main() {\n    var n int\n    fmt.Scan(&n)\n    fmt.Println(climbStairs(n))\n}`,
+    RUST: `use std::io;\nfn climb_stairs(n: i32) -> i32 {\n    0\n}\nfn main() {\n    let mut input = String::new();\n    io::stdin().read_line(&mut input).unwrap();\n    let n: i32 = input.trim().parse().unwrap();\n    println!("{}", climb_stairs(n));\n}`,
+    RUBY: `def climb_stairs(n)\n  0\nend\nn = gets.to_i\nputs climb_stairs(n)`,
+    PHP: `<?php\nfunction climbStairs($n) {\n    return 0;\n}\nfscanf(STDIN, "%d", $n);\necho climbStairs($n);`,
+    SWIFT: `import Foundation\nfunc climbStairs(_ n: Int) -> Int {\n    return 0\n}\nif let input = readLine(), let n = Int(input) {\n    print(climbStairs(n))\n}`,
+    CSHARP: `using System;\nclass Program {\n    static int ClimbStairs(int n) {\n        return 0;\n    }\n    static void Main() {\n        int n = int.Parse(Console.ReadLine());\n        Console.WriteLine(ClimbStairs(n));\n    }\n}`,
+    KOTLIN: `import java.util.Scanner\nfun climbStairs(n: Int): Int {\n    return 0\n}\nfun main() {\n    val sc = Scanner(System.\`in\`)\n    val n = sc.nextInt()\n    println(climbStairs(n))\n}`,
+    SCALA: `import scala.io.StdIn\nobject Main {\n    def climbStairs(n: Int): Int = {\n        0\n    }\n    def main(args: Array[String]): Unit = {\n        val n = StdIn.readInt()\n        println(climbStairs(n))\n    }\n}`,
   },
   referenceSolutions: {
-    JAVASCRIPT: `/**
-* @param {number} n
-* @return {number}
-*/
-function climbStairs(n) {
-// Base cases
-if (n <= 2) {
-  return n;
-}
-
-// Dynamic programming approach
-let dp = new Array(n + 1);
-dp[1] = 1;
-dp[2] = 2;
-
-for (let i = 3; i <= n; i++) {
-  dp[i] = dp[i - 1] + dp[i - 2];
-}
-
-return dp[n];
-
-/* Alternative approach with O(1) space
-let a = 1; // ways to climb 1 step
-let b = 2; // ways to climb 2 steps
-
-for (let i = 3; i <= n; i++) {
-  let temp = a + b;
-  a = b;
-  b = temp;
-}
-
-return n === 1 ? a : b;
-*/
-}
-
-// Parse input and execute
-const readline = require('readline');
-const rl = readline.createInterface({
-input: process.stdin,
-output: process.stdout,
-terminal: false
-});
-
-rl.on('line', (line) => {
-const n = parseInt(line.trim());
-const result = climbStairs(n);
-
-console.log(result);
-rl.close();
-});`,
-    PYTHON: `class Solution:
-  def climbStairs(self, n: int) -> int:
-      # Base cases
-      if n <= 2:
-          return n
-      
-      # Dynamic programming approach
-      dp = [0] * (n + 1)
-      dp[1] = 1
-      dp[2] = 2
-      
-      for i in range(3, n + 1):
-          dp[i] = dp[i - 1] + dp[i - 2]
-      
-      return dp[n]
-      
-      # Alternative approach with O(1) space
-      # a, b = 1, 2
-      # 
-      # for i in range(3, n + 1):
-      #     a, b = b, a + b
-      # 
-      # return a if n == 1 else b
-
-# Input parsing
-if __name__ == "__main__":
-  import sys
-  
-  # Parse input
-  n = int(sys.stdin.readline().strip())
-  
-  # Solve
-  sol = Solution()
-  result = sol.climbStairs(n)
-  
-  # Print result
-  print(result)`,
-    JAVA: `import java.util.Scanner;
-
-class Main {
-  public int climbStairs(int n) {
-      // Base cases
-      if (n <= 2) {
-          return n;
-      }
-      
-      // Dynamic programming approach
-      int[] dp = new int[n + 1];
-      dp[1] = 1;
-      dp[2] = 2;
-      
-      for (int i = 3; i <= n; i++) {
-          dp[i] = dp[i - 1] + dp[i - 2];
-      }
-      
-      return dp[n];
-      
-      /* Alternative approach with O(1) space
-      int a = 1; // ways to climb 1 step
-      int b = 2; // ways to climb 2 steps
-      
-      for (int i = 3; i <= n; i++) {
-          int temp = a + b;
-          a = b;
-          b = temp;
-      }
-      
-      return n == 1 ? a : b;
-      */
-  }
-  
-  public static void main(String[] args) {
-      Scanner scanner = new Scanner(System.in);
-      int n = Integer.parseInt(scanner.nextLine().trim());
-      
-      // Use Main class instead of Solution
-      Main main = new Main();
-      int result = main.climbStairs(n);
-      
-      System.out.println(result);
-      scanner.close();
-  }
-}`,
+    JAVASCRIPT: `function climbStairs(n) {\n  if (n <= 2) return n;\n  let a = 1, b = 2;\n  for (let i = 3; i <= n; i++) {\n    [a, b] = [b, a + b];\n  }\n  return b;\n}\nconst readline = require('readline');\nconst rl = readline.createInterface({ input: process.stdin, terminal: false });\nrl.on('line', (line) => {\n  console.log(climbStairs(parseInt(line.trim())));\n  rl.close();\n});`,
+    PYTHON: `import sys\ndef climbStairs(n):\n    if n <= 2: return n\n    a, b = 1, 2\n    for _ in range(3, n + 1):\n        a, b = b, a + b\n    return b\nif __name__ == "__main__":\n    n = int(sys.stdin.readline().strip())\n    print(climbStairs(n))`,
+    JAVA: `import java.util.Scanner;\nclass Main {\n    public int climbStairs(int n) {\n        if (n <= 2) return n;\n        int a = 1, b = 2;\n        for (int i = 3; i <= n; i++) {\n            int t = a + b; a = b; b = t;\n        }\n        return b;\n    }\n    public static void main(String[] args) {\n        Scanner s = new Scanner(System.in);\n        int n = s.nextInt();\n        System.out.println(new Main().climbStairs(n));\n    }\n}`,
+    CPP: `#include <iostream>\nusing namespace std;\nclass Solution {\npublic:\n    int climbStairs(int n) {\n        if (n <= 2) return n;\n        int a = 1, b = 2;\n        for (int i = 3; i <= n; i++) {\n            int t = a + b; a = b; b = t;\n        }\n        return b;\n    }\n};\nint main() {\n    int n; cin >> n;\n    cout << Solution().climbStairs(n) << endl;\n    return 0;\n}`,
+    TYPESCRIPT: `function climbStairs(n: number): number {\n  if (n <= 2) return n;\n  let a = 1, b = 2;\n  for (let i = 3; i <= n; i++) {\n    let t = a + b; a = b; b = t;\n  }\n  return b;\n}\nimport * as fs from "fs";\nconst input = fs.readFileSync(0, "utf8");\nconsole.log(climbStairs(parseInt(input.trim())));`,
+    C: `#include <stdio.h>\nint climbStairs(int n) {\n    if (n <= 2) return n;\n    int a = 1, b = 2;\n    for (int i = 3; i <= n; i++) {\n        int t = a + b; a = b; b = t;\n    }\n    return b;\n}\nint main() {\n    int n; scanf("%d", &n);\n    printf("%d\\n", climbStairs(n));\n    return 0;\n}`,
+    GO: `package main\nimport "fmt"\nfunc climbStairs(n int) int {\n    if n <= 2 { return n }\n    a, b := 1, 2\n    for i := 3; i <= n; i++ {\n        a, b = b, a + b\n    }\n    return b\n}\nfunc main() {\n    var n int\n    fmt.Scan(&n)\n    fmt.Println(climbStairs(n))\n}`,
+    RUST: `use std::io;\nfn climb_stairs(n: i32) -> i32 {\n    if n <= 2 { return n; }\n    let (mut a, mut b) = (1, 2);\n    for _ in 3..=n {\n        let t = a + b; a = b; b = t;\n    }\n    b\n}\nfn main() {\n    let mut input = String::new();\n    io::stdin().read_line(&mut input).unwrap();\n    let n: i32 = input.trim().parse().unwrap();\n    println!("{}", climb_stairs(n));\n}`,
+    RUBY: `def climb_stairs(n)\n  return n if n <= 2\n  a, b = 1, 2\n  (3..n).each { t = a + b; a = b; b = t }\n  b\nend\nn = gets.to_i\nputs climb_stairs(n)`,
+    PHP: `<?php\nfunction climbStairs($n) {\n    if ($n <= 2) return $n;\n    $a = 1; $b = 2;\n    for ($i = 3; $i <= $n; $i++) { $t = $a + $b; $a = $b; $b = $t; }\n    return $b;\n}\nfscanf(STDIN, "%d", $n);\necho climbStairs($n);`,
+    SWIFT: `import Foundation\nfunc climbStairs(_ n: Int) -> Int {\n    if n <= 2 { return n }\n    var a = 1, b = 2\n    for _ in 3...n { let t = a + b; a = b; b = t }\n    return b\n}\nif let input = readLine(), let n = Int(input) {\n    print(climbStairs(n))\n}`,
+    CSHARP: `using System;\nclass Program {\n    static int ClimbStairs(int n) {\n        if (n <= 2) return n;\n        int a = 1, b = 2;\n        for (int i = 3; i <= n; i++) { int t = a + b; a = b; b = t; }\n        return b;\n    }\n    static void Main() {\n        int n = int.Parse(Console.ReadLine());\n        Console.WriteLine(ClimbStairs(n));\n    }\n}`,
+    KOTLIN: `import java.util.Scanner\nfun climbStairs(n: Int): Int {\n    if (n <= 2) return n\n    var a = 1; var b = 2\n    for (i in 3..n) { val t = a + b; a = b; b = t }\n    return b\n}\nfun main() {\n    val sc = Scanner(System.\`in\`)\n    val n = sc.nextInt()\n    println(climbStairs(n))\n}`,
+    SCALA: `import scala.io.StdIn\nobject Main {\n    def climbStairs(n: Int): Int = {\n        if (n <= 2) return n\n        var a = 1; var b = 2\n        for (i <- 3 to n) { val t = a + b; a = b; b = t }\n        b\n    }\n    def main(args: Array[String]): Unit = {\n        val n = StdIn.readInt()\n        println(climbStairs(n))\n    }\n}`,
   },
 };
 
@@ -338,176 +152,52 @@ const sampleStringProblem = {
     },
   ],
   examples: {
-    JAVASCRIPT: {
-      input: 's = "A man, a plan, a canal: Panama"',
-      output: "true",
-      explanation: '"amanaplanacanalpanama" is a palindrome.',
-    },
-    PYTHON: {
-      input: 's = "A man, a plan, a canal: Panama"',
-      output: "true",
-      explanation: '"amanaplanacanalpanama" is a palindrome.',
-    },
-    JAVA: {
-      input: 's = "A man, a plan, a canal: Panama"',
-      output: "true",
-      explanation: '"amanaplanacanalpanama" is a palindrome.',
-    },
+    JAVASCRIPT: { input: 's = "A man, a plan, a canal: Panama"', output: "true", explanation: '"amanaplanacanalpanama" is a palindrome.' },
+    PYTHON: { input: 's = "race a car"', output: "false", explanation: '"raceacar" is not a palindrome.' },
+    JAVA: { input: 's = "race a car"', output: "false", explanation: "..." },
+    CPP: { input: 's = "A man, a plan, a canal: Panama"', output: "true", explanation: "..." },
+    TYPESCRIPT: { input: 's = "race a car"', output: "false", explanation: "..." },
+    C: { input: 's = "race a car"', output: "false", explanation: "..." },
+    GO: { input: 's = "A man, a plan, a canal: Panama"', output: "true", explanation: "..." },
+    RUST: { input: 's = "race a car"', output: "false", explanation: "..." },
+    RUBY: { input: 's = "race a car"', output: "false", explanation: "..." },
+    PHP: { input: 's = "A man, a plan, a canal: Panama"', output: "true", explanation: "..." },
+    SWIFT: { input: 's = "race a car"', output: "false", explanation: "..." },
+    CSHARP: { input: 's = "race a car"', output: "false", explanation: "..." },
+    KOTLIN: { input: 's = "A man, a plan, a canal: Panama"', output: "true", explanation: "..." },
+    SCALA: { input: 's = "race a car"', output: "false", explanation: "..." },
   },
   codeSnippets: {
-    JAVASCRIPT: `/**
-   * @param {string} s
-   * @return {boolean}
-   */
-  function isPalindrome(s) {
-    // Write your code here
-  }
-  
-  // Add readline for dynamic input handling
-  const readline = require('readline');
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-  });
-  
-  // Process input line
-  rl.on('line', (line) => {
-    // Call solution with the input string
-    const result = isPalindrome(line);
-    
-    // Output the result
-    console.log(result ? "true" : "false");
-    rl.close();
-  });`,
-    PYTHON: `class Solution:
-      def isPalindrome(self, s: str) -> bool:
-          # Write your code here
-          pass
-  
-  # Input parsing
-  if __name__ == "__main__":
-      import sys
-      # Read the input string
-      s = sys.stdin.readline().strip()
-      
-      # Call solution
-      sol = Solution()
-      result = sol.isPalindrome(s)
-      
-      # Output result
-      print(str(result).lower())  # Convert True/False to lowercase true/false`,
-    JAVA: `import java.util.Scanner;
-
-public class Main {
-    public static String preprocess(String s) {
-        return s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
-    }
-
-    public static boolean isPalindrome(String s) {
-       
-    }
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        String input = sc.nextLine();
-
-        boolean result = isPalindrome(input);
-        System.out.println(result ? "true" : "false");
-    }
-}
-`,
+    JAVASCRIPT: `function isPalindrome(s) {\n  // Write your code here\n}\nconst rl = require('readline').createInterface({ input: process.stdin, terminal: false });\nrl.on('line', (line) => {\n  console.log(isPalindrome(line) ? "true" : "false");\n  rl.close();\n});`,
+    PYTHON: `import sys\ndef isPalindrome(s):\n    # Write your code here\n    pass\nif __name__ == "__main__":\n    s = sys.stdin.readline().strip()\n    print(str(isPalindrome(s)).lower())`,
+    JAVA: `import java.util.Scanner;\nclass Main {\n    public boolean isPalindrome(String s) {\n        return false;\n    }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String input = sc.hasNextLine() ? sc.nextLine() : "";\n        System.out.println(new Main().isPalindrome(input) ? "true" : "false");\n    }\n}`,
+    CPP: `#include <iostream>\n#include <string>\nusing namespace std;\nclass Solution {\npublic:\n    bool isPalindrome(string s) {\n        return false;\n    }\n};\nint main() {\n    string s; getline(cin, s);\n    cout << (Solution().isPalindrome(s) ? "true" : "false") << endl;\n    return 0;\n}`,
+    TYPESCRIPT: `function isPalindrome(s: string): boolean {\n  return false;\n}\nimport * as fs from "fs";\nconst input = fs.readFileSync(0, "utf8").trim();\nconsole.log(isPalindrome(input) ? "true" : "false");`,
+    C: `#include <stdio.h>\n#include <string.h>\n#include <stdbool.h>\nbool isPalindrome(char* s) {\n    return false;\n}\nint main() {\n    char s[1024]; if(fgets(s, 1024, stdin)) { s[strcspn(s, "\\n")] = 0; }\n    printf("%s\\n", isPalindrome(s) ? "true" : "false");\n    return 0;\n}`,
+    GO: `package main\nimport ("fmt"; "bufio"; "os"; "strings")\nfunc isPalindrome(s string) bool {\n    return false\n}\nfunc main() {\n    reader := bufio.NewReader(os.Stdin)\n    input, _ := reader.ReadString('\\n')\n    fmt.Println(isPalindrome(strings.TrimSpace(input)))\n}`,
+    RUST: `use std::io::{self, BufRead};\nfn is_palindrome(s: String) -> bool {\n    false\n}\nfn main() {\n    let s = io::stdin().lock().lines().next().unwrap().or(Ok("".to_string())).unwrap();\n    println!("{}", is_palindrome(s));\n}`,
+    RUBY: `def is_palindrome(s)\n  false\nend\nputs is_palindrome(gets.to_s.chomp) ? "true" : "false"`,
+    PHP: `<?php\nfunction isPalindrome($s) {\n    return false;\n}\necho isPalindrome(fgets(STDIN)) ? "true" : "false";`,
+    SWIFT: `import Foundation\nfunc isPalindrome(_ s: String) -> Bool {\n    return false\n}\nprint(isPalindrome(readLine() ?? "") ? "true" : "false")`,
+    CSHARP: `using System;\nclass Program {\n    static bool IsPalindrome(string s) {\n        return false;\n    }\n    static void Main() {\n        Console.WriteLine(IsPalindrome(Console.ReadLine() ?? "") ? "true" : "false");\n    }\n}`,
+    KOTLIN: `import java.util.Scanner\nfun isPalindrome(s: String): Boolean {\n    return false\n}\nfun main() {\n    val sc = Scanner(System.\`in\`)\n    val s = if (sc.hasNextLine()) sc.nextLine() else ""\n    println(if (isPalindrome(s)) "true" else "false")\n}`,
+    SCALA: `import scala.io.StdIn\nobject Main {\n    def isPalindrome(s: String): Boolean = {\n        false\n    }\n    def main(args: Array[String]): Unit = {\n        println(if (isPalindrome(StdIn.readLine())) "true" else "false")\n    }\n}`,
   },
   referenceSolutions: {
-    JAVASCRIPT: `/**
-   * @param {string} s
-   * @return {boolean}
-   */
-  function isPalindrome(s) {
-    // Convert to lowercase and remove non-alphanumeric characters
-    s = s.toLowerCase().replace(/[^a-z0-9]/g, '');
-    
-    // Check if it's a palindrome
-    let left = 0;
-    let right = s.length - 1;
-    
-    while (left < right) {
-      if (s[left] !== s[right]) {
-        return false;
-      }
-      left++;
-      right--;
-    }
-    
-    return true;
-  }
-  
-  // Add readline for dynamic input handling
-  const readline = require('readline');
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    terminal: false
-  });
-  
-  // Process input line
-  rl.on('line', (line) => {
-    // Call solution with the input string
-    const result = isPalindrome(line);
-    
-    // Output the result
-    console.log(result ? "true" : "false");
-    rl.close();
-  });`,
-    PYTHON: `class Solution:
-      def isPalindrome(self, s: str) -> bool:
-          # Convert to lowercase and keep only alphanumeric characters
-          filtered_chars = [c.lower() for c in s if c.isalnum()]
-          
-          # Check if it's a palindrome
-          return filtered_chars == filtered_chars[::-1]
-  
-  # Input parsing
-  if __name__ == "__main__":
-      import sys
-      # Read the input string
-      s = sys.stdin.readline().strip()
-      
-      # Call solution
-      sol = Solution()
-      result = sol.isPalindrome(s)
-      
-      # Output result
-      print(str(result).lower())  # Convert True/False to lowercase true/false`,
-    JAVA: `import java.util.Scanner;
-
-public class Main {
-    public static String preprocess(String s) {
-        return s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();
-    }
-
-    public static boolean isPalindrome(String s) {
-        s = preprocess(s);
-        int left = 0, right = s.length() - 1;
-
-        while (left < right) {
-            if (s.charAt(left) != s.charAt(right)) return false;
-            left++;
-            right--;
-        }
-
-        return true;
-    }
-
-    public static void main(String[] args) {
-        Scanner sc = new Scanner(System.in);
-        String input = sc.nextLine();
-
-        boolean result = isPalindrome(input);
-        System.out.println(result ? "true" : "false");
-    }
-}
-`,
+    JAVASCRIPT: `function isPalindrome(s) {\n  s = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n  return s === s.split('').reverse().join('');\n}\nconst rl = require('readline').createInterface({ input: process.stdin, terminal: false });\nrl.on('line', (line) => {\n  console.log(isPalindrome(line) ? "true" : "false");\n  rl.close();\n});`,
+    PYTHON: `import sys, re\ndef isPalindrome(s):\n    s = re.sub(r'[^a-zA-Z0-9]', '', s).lower()\n    return s == s[::-1]\nif __name__ == "__main__":\n    s = sys.stdin.readline().strip()\n    print(str(isPalindrome(s)).lower())`,
+    JAVA: `import java.util.Scanner;\nclass Main {\n    public boolean isPalindrome(String s) {\n        String f = s.replaceAll("[^a-zA-Z0-9]", "").toLowerCase();\n        return f.equals(new StringBuilder(f).reverse().toString());\n    }\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String input = sc.hasNextLine() ? sc.nextLine() : "";\n        System.out.println(new Main().isPalindrome(input) ? "true" : "false");\n    }\n}`,
+    CPP: `#include <iostream>\n#include <string>\n#include <algorithm>\nusing namespace std;\nclass Solution {\npublic:\n    bool isPalindrome(string s) {\n        string f = "";\n        for (char c : s) if (isalnum(c)) f += tolower(c);\n        string r = f; reverse(r.begin(), r.end());\n        return f == r;\n    }\n};\nint main() {\n    string s; getline(cin, s);\n    cout << (Solution().isPalindrome(s) ? "true" : "false") << endl;\n    return 0;\n}`,
+    TYPESCRIPT: `function isPalindrome(s: string): boolean {\n  const f = s.toLowerCase().replace(/[^a-z0-9]/g, '');\n  return f === f.split('').reverse().join('');\n}\nimport * as fs from "fs";\nconst input = fs.readFileSync(0, "utf8").trim();\nconsole.log(isPalindrome(input) ? "true" : "false");`,
+    C: `#include <stdio.h>\n#include <string.h>\n#include <ctype.h>\n#include <stdbool.h>\nbool isPalindrome(char* s) {\n    int l = 0, r = strlen(s) - 1;\n    while (l < r) {\n        if (!isalnum(s[l])) l++;\n        else if (!isalnum(s[r])) r--;\n        else if (tolower(s[l++]) != tolower(s[r--])) return false;\n    }\n    return true;\n}\nint main() {\n    char s[1024]; if(fgets(s, 1024, stdin)) { s[strcspn(s, "\\n")] = 0; }\n    printf("%s\\n", isPalindrome(s) ? "true" : "false");\n    return 0;\n}`,
+    GO: `package main\nimport ("fmt"; "bufio"; "os"; "strings"; "unicode")\nfunc isPalindrome(s string) bool {\n    f := ""\n    for _, r := range s {\n        if unicode.IsLetter(r) || unicode.IsDigit(r) {\n            f += strings.ToLower(string(r))\n        }\n    }\n    for i := 0; i < len(f)/2; i++ {\n        if f[i] != f[len(f)-1-i] { return false }\n    }\n    return true\n}\nfunc main() {\n    reader := bufio.NewReader(os.Stdin)\n    input, _ := reader.ReadString('\\n')\n    fmt.Println(isPalindrome(strings.TrimSpace(input)))\n}`,
+    RUST: `use std::io::{self, BufRead};\nfn is_palindrome(s: String) -> bool {\n    let f: Vec<char> = s.chars().filter(|c| c.is_alphanumeric()).map(|c| c.to_ascii_lowercase()).collect();\n    f.iter().eq(f.iter().rev())\n}\nfn main() {\n    let s = io::stdin().lock().lines().next().unwrap().or(Ok("".to_string())).unwrap();\n    println!("{}", is_palindrome(s));\n}`,
+    RUBY: `def is_palindrome(s)\n  f = s.downcase.gsub(/[^a-z0-9]/, "")\n  f == f.reverse\nend\nputs is_palindrome(gets.to_s.chomp) ? "true" : "false"`,
+    PHP: `<?php\nfunction isPalindrome($s) {\n    $f = preg_replace("/[^a-z0-9]/", "", strtolower($s));\n    return $f == strrev($f);\n}\necho isPalindrome(fgets(STDIN)) ? "true" : "false";`,
+    SWIFT: `import Foundation\nfunc isPalindrome(_ s: String) -> Bool {\n    let f = s.lowercased().filter { $0.isLetter || $0.isNumber }\n    return f == String(f.reversed())\n}\nprint(isPalindrome(readLine() ?? "") ? "true" : "false")`,
+    CSHARP: `using System; using System.Linq; using System.Text.RegularExpressions;\nclass Program {\n    static bool IsPalindrome(string s) {\n        string f = Regex.Replace(s.ToLower(), "[^a-z0-9]", "");\n        return f == new string(f.Reverse().ToArray());\n    }\n    static void Main() {\n        Console.WriteLine(IsPalindrome(Console.ReadLine() ?? "") ? "true" : "false");\n    }\n}`,
+    KOTLIN: `import java.util.Scanner\nfun isPalindrome(s: String): Boolean {\n    val f = s.lowercase().filter { it.isLetterOrDigit() }\n    return f == f.reversed()\n}\nfun main() {\n    val sc = Scanner(System.\`in\`)\n    val s = if (sc.hasNextLine()) sc.nextLine() else ""\n    println(if (isPalindrome(s)) "true" else "false")\n}`,
+    SCALA: `import scala.io.StdIn\nobject Main {\n    def isPalindrome(s: String): Boolean = {\n        val f = s.toLowerCase.filter(_.isLetterOrDigit)\n        f == f.reverse\n    }\n    def main(args: Array[String]): Unit = {\n        println(if (isPalindrome(StdIn.readLine())) "true" else "false")\n    }\n}`,
   },
 };
 
@@ -520,21 +210,18 @@ const CreateProblemForm = () => {
             defaultValues:{
                  testCases: [{ input: "", output: "" }],
       tags: [""],
-      examples: {
-        JAVASCRIPT: { input: "", output: "", explanation: "" },
-        PYTHON: { input: "", output: "", explanation: "" },
-        JAVA: { input: "", output: "", explanation: "" },
-      },
-      codeSnippets: {
-        JAVASCRIPT: "function solution() {\n  // Write your code here\n}",
-        PYTHON: "def solution():\n    # Write your code here\n    pass",
-        JAVA: "public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}",
-      },
-      referenceSolutions: {
-        JAVASCRIPT: "// Add your reference solution here",
-        PYTHON: "# Add your reference solution here",
-        JAVA: "// Add your reference solution here",
-      },
+      examples: SUPPORTED_LANGUAGES.reduce((acc, lang) => {
+        acc[lang] = { input: "", output: "", explanation: "" };
+        return acc;
+      }, {}),
+      codeSnippets: SUPPORTED_LANGUAGES.reduce((acc, lang) => {
+        acc[lang] = `// Starter code for ${lang}\n`;
+        return acc;
+      }, {}),
+      referenceSolutions: SUPPORTED_LANGUAGES.reduce((acc, lang) => {
+        acc[lang] = `// Reference solution for ${lang}\n`;
+        return acc;
+      }, {}),
             }
         }
     )
@@ -828,7 +515,7 @@ const CreateProblemForm = () => {
 
             {/* Code Editor Sections */}
             <div className="space-y-8">
-              {["JAVASCRIPT", "PYTHON", "JAVA"].map((language) => (
+              {SUPPORTED_LANGUAGES.map((language) => (
                 <div
                   key={language}
                   className="card bg-base-200 p-4 md:p-6 shadow-md"

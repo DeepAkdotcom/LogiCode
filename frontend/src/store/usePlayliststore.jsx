@@ -8,28 +8,29 @@ export const usePlaylistStore = create((set, get) => ({
   isLoading: false,
   error: null,
 
-  createPlaylist: async (playlistData) => {
-    try {
-      set({ isLoading: true });
-      const response = await axiosInstance.post(
-        "/playlist/create-playlist",
-        playlistData
-      );
 
-      set((state) => ({
-        playlists: [...state.playlists, response.data.data],
-      }));
+createPlaylist: async (playlistData) => {
+  try {
+    set({ isLoading: true });
+    const response = await axiosInstance.post("/playlist/create-playlist", playlistData);
 
-      toast.success("Playlist created successfully");
-      return response.data.playList;
-    } catch (error) {
-      console.error("Error creating playlist:", error);
-      toast.error(error.response?.data?.error || "Failed to create playlist");
-      throw error;
-    } finally {
-      set({ isLoading: false });
-    }
-  },
+    // Append the created playlist to the playlists in state
+    set((state) => ({
+      playlists: [ ...(state.playlists || []), response.data.data ],
+    }));
+
+    toast.success("Playlist created successfully");
+    // return the created playlist in case caller wants it
+    return response.data.data;
+  } catch (error) {
+    console.error("Error creating playlist:", error);
+    toast.error(error.response?.data?.message || error.response?.data?.error || "Failed to create playlist");
+    throw error;
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
 
   getAllPlaylists: async () => {
     try {
@@ -57,47 +58,58 @@ export const usePlaylistStore = create((set, get) => ({
     }
   },
 
-  addProblemToPlaylist: async (playlistId, problemIds) => {
-    try {
-      set({ isLoading: true });
-      await axiosInstance.post(`/playlist/${playlistId}/add-problem`, {
-        problemIds,
-      });
-
-      toast.success("Problem added to playlist");
-
-      // Refresh the playlist details
-      if (get().currentPlaylist?.id === playlistId) {
-        await get().getPlaylistDetails(playlistId);
-      }
-    } catch (error) {
-      console.error("Error adding problem to playlist:", error);
-      toast.error("Failed to add problem to playlist");
-    } finally {
-      set({ isLoading: false });
+ addProblemToPlaylist: async (playlistId, problemIds) => {
+  try {
+    set({ isLoading: true });
+    if (!playlistId || !Array.isArray(problemIds) || problemIds.length === 0) {
+      throw new Error("Invalid playlistId or problemIds");
     }
-  },
+    const res = await axiosInstance.post(`/playlist/${playlistId}/add-problem`, {
+      problemIds,
+    });
 
-  removeProblemFromPlaylist: async (playlistId, problemIds) => {
-    try {
-      set({ isLoading: true });
-      await axiosInstance.post(`/playlist/${playlistId}/remove-problems`, {
-        problemIds,
-      });
+    toast.success(res.data?.message || "Problem(s) added to playlist");
 
-      toast.success("Problem removed from playlist");
-
-      // Refresh the playlist details
-      if (get().currentPlaylist?.id === playlistId) {
-        await get().getPlaylistDetails(playlistId);
-      }
-    } catch (error) {
-      console.error("Error removing problem from playlist:", error);
-      toast.error("Failed to remove problem from playlist");
-    } finally {
-      set({ isLoading: false });
+    // Refresh
+    if (get().currentPlaylist?.id === playlistId) {
+      await get().getPlaylistDetails(playlistId);
+    } else {
+      // optionally refresh all playlists
+      await get().getAllPlaylists();
     }
-  },
+  } catch (error) {
+    console.error("Error adding problem to playlist:", error);
+    toast.error(error.response?.data?.message || "Failed to add problem to playlist");
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
+removeProblemFromPlaylist: async (playlistId, problemIds) => {
+  try {
+    set({ isLoading: true });
+    if (!playlistId || !Array.isArray(problemIds) || problemIds.length === 0) {
+      throw new Error("Invalid playlistId or problemIds");
+    }
+    const res = await axiosInstance.post(`/playlist/${playlistId}/remove-problems`, {
+      problemIds,
+    });
+
+    toast.success(res.data?.message || "Problem(s) removed from playlist");
+
+    if (get().currentPlaylist?.id === playlistId) {
+      await get().getPlaylistDetails(playlistId);
+    } else {
+      await get().getAllPlaylists();
+    }
+  } catch (error) {
+    console.error("Error removing problem from playlist:", error);
+    toast.error(error.response?.data?.message || "Failed to remove problem from playlist");
+  } finally {
+    set({ isLoading: false });
+  }
+},
+
 
   deletePlaylist: async (playlistId) => {
     try {

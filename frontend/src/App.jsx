@@ -11,6 +11,7 @@ import Layout from './layout/layout'
 import AdminRoute from './components/AdminRoute'
 import AddProblem from './page/AddProblem'
 import ProblemPage from './page/ProblemPage'
+import PlaylistPage from './page/PlaylistPage'
 
 
 const App = () => {
@@ -62,6 +63,8 @@ const App = () => {
             element={authUser ? <AddProblem/> : <Navigate t0={"/"}/>}
           />
         </Route>
+
+        <Route path="/playlists" element={<PlaylistPage/>} />
 
       </Routes>
     </div>

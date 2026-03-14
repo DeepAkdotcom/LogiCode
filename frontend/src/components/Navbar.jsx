@@ -30,10 +30,13 @@ const Navbar = () => {
                                 <img
                                     src={
                                         authUser?.image ||
-                                        "https://avatar.iran.liara.run/public/boy"
+                                        `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser?.name || "User")}&background=6d28d9&color=fff&bold=true`
                                     }
                                     alt="User Avatar"
                                     className="object-cover"
+                                    onError={(e) => {
+                                        e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(authUser?.name || "U")}&background=6d28d9&color=fff&bold=true`;
+                                    }}
                                 />
                             </div>
 
