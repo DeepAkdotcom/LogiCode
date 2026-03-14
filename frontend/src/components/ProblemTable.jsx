@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { Link } from "react-router-dom";
 import { Bookmark, PencilIcon, Trash, TrashIcon, Plus } from "lucide-react";
-import { useActions } from "../store/useAction";
+import { useProblemStore } from "../store/useProblemStore";
 import AddToPlaylistModal from "./AddToPlaylist";
 import CreatePlaylistModal from "./CreatePlaylistModal";
 import { usePlaylistStore } from "../store/usePlayliststore";
@@ -10,7 +10,7 @@ import { usePlaylistStore } from "../store/usePlayliststore";
 
 const ProblemsTable = ({ problems }) => {
   const { authUser } = useAuthStore();
-  const { onDeleteProblem } = useActions();
+  const { deleteProblem } = useProblemStore();
   const { createPlaylist } = usePlaylistStore();
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("ALL");
@@ -56,7 +56,7 @@ const ProblemsTable = ({ problems }) => {
   }, [filteredProblems, currentPage]);
 
   const handleDelete = (id) => {
-    onDeleteProblem(id);
+    deleteProblem(id);
   };
 
   const handleCreatePlaylist = async (data) => {

@@ -91,16 +91,28 @@ const ProblemPage = () => {
     setCode(problem.codeSnippets?.[lang] || "");
   };
 
-  const handleRunCode = (e) => {
+  const handleRunCode = async (e) => {
     e.preventDefault();
     try {
       const language_id = getLanguageId(selectedLanguage);
       const stdin = problem.testCases.map((tc) => tc.input);
       const expected_outputs = problem.testCases.map((tc) => tc.output);
-      executeCode(code, language_id, stdin, expected_outputs, id);
+      await executeCode(code, language_id, stdin, expected_outputs, id);
+      
+      // Refresh submission count and list after execution
+      getSubmissionCountForProblem(id);
+      if (activeTab === "submissions") {
+        getSubmissionForProblem(id);
+      }
     } catch (error) {
       console.log("Error executing code", error);
     }
+  };
+
+  const handleSubmitCode = (e) => {
+    handleRunCode(e);
+    // You could add navigation to submissions tab here if desired:
+    // setActiveTab("submissions");
   };
 
   if (isProblemLoading || !problem) {
@@ -179,7 +191,11 @@ const ProblemPage = () => {
                 </>
               )}
             </Button>
-            <Button className="gap-2 bg-success text-success-foreground hover:bg-success/90 h-8 px-4 text-sm">
+            <Button 
+              onClick={handleSubmitCode}
+              disabled={isExecuting}
+              className="gap-2 bg-success text-success-foreground hover:bg-success/90 h-8 px-4 text-sm"
+            >
               <Send className="w-4 h-4" />
               Submit
             </Button>
